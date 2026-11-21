@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    name: Збірка і тести (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Відновити залежності та інструменти
+        run: |
+          dotnet restore
+          dotnet tool restore
+
+      - name: Стиль коду (dotnet format)
+        run: dotnet format --verify-no-changes --no-restore
+
+      - name: Збірка зі статичним аналізом (попередження = помилки)
+        run: dotnet build -c Release --no-restore
+
+      - name: Тести
+        run: dotnet test -c Release --no-build --results-directory TestResults --logger "trx;LogFileName=tests.trx"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tests-${{ matrix.os }}
+          path: TestResults/**/*.trx

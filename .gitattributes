@@ -1,0 +1,4 @@
+# Git зберігає текстові файли з LF, а на Windows видає їх з CRLF, тож dotnet format
+# однаково проходить на всіх ОС незалежно від налаштувань core.autocrlf учасника.
+* text=auto
+*.png binary

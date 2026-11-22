@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Threading.RateLimiting;
 using Greenhouse.Api.Auth;
+using Greenhouse.Api.Background;
 using Greenhouse.Api.Endpoints;
 using Greenhouse.Api.Infrastructure;
 using Greenhouse.Api.Realtime;
@@ -25,6 +26,12 @@ builder.Services.AddGreenhouseCore();
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddSignalR().AddJsonProtocol(o =>
     o.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower);
+
+builder.Services.Configure<SimulatorOptions>(builder.Configuration.GetSection(SimulatorOptions.Section));
+if (builder.Configuration.GetValue<bool>("Simulator:Enabled"))
+{
+    builder.Services.AddHostedService<SimulatorWorker>();
+}
 
 builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower);

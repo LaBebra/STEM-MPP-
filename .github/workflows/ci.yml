@@ -42,3 +42,17 @@ jobs:
         with:
           name: tests-${{ matrix.os }}
           path: TestResults/**/*.trx
+
+  docker:
+    name: Docker-образ
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Зібрати образи API і симулятора
+        run: |
+          docker build --target api -t greenhouse-api .
+          docker build --target simulator -t greenhouse-simulator .
+      - name: Перевірити compose.yaml
+        run: |
+          cp .env.example .env
+          docker compose config --quiet

@@ -14,8 +14,25 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Логи: консоль + файл logs/greenhouse-<дата>.log (критерій C2, пункт 5).
+var logPath = builder.Configuration["Logging:FilePath"] ?? Path.Combine("logs", "greenhouse-.log");
+builder.Services.AddSerilog(lc => lc
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore.DataProtection", LogEventLevel.Error)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+    // На новій БД EF Core спершу пробує прочитати __EFMigrationsHistory і логує це як помилку, хоча далі
+    // сам створює таблицю. Справжні помилки SQL і так доходять до GlobalExceptionHandler і логуються там.
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Fatal)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(formatProvider: System.Globalization.CultureInfo.InvariantCulture)
+    .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14,
+        formatProvider: System.Globalization.CultureInfo.InvariantCulture));
 
 // Дані: SQLite або PostgreSQL залежно від Database:Provider.
 builder.Services.AddGreenhouseDatabase(
@@ -99,6 +116,8 @@ await using (var scope = app.Services.CreateAsyncScope())
         .EnsureAdminAsync(auth.AdminUsername, auth.AdminPassword, CancellationToken.None);
 }
 
+// Логування запитів стоїть перед обробником винятків, щоб у лог потрапляв фінальний код відповіді.
+app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseDefaultFiles();

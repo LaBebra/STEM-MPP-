@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <!-- Тестам не потрібна документація, а підкреслення в назвах методів — норма для xUnit. -->
+    <!-- Тестам не потрібна документація, а підкреслення в назвах методів - норма для xUnit. -->
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CA1707;CA2007</NoWarn>
   </PropertyGroup>

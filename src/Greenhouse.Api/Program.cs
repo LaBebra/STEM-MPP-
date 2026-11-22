@@ -20,6 +20,9 @@ using Serilog.Events;
 var builder = WebApplication.CreateBuilder(args);
 
 // Логи: консоль + файл logs/greenhouse-<дата>.log (критерій C2, пункт 5).
+// preserveStaticLogger: кожен застосунок пише через власний логер, а не через глобальний Log.Logger.
+// Інакше паралельні інтеграційні тести (кілька застосунків в одному процесі) перезаписують спільний
+// логер, і записи одного тесту потрапляють у лог-файл іншого.
 var logPath = builder.Configuration["Logging:FilePath"] ?? Path.Combine("logs", "greenhouse-.log");
 builder.Services.AddSerilog(lc => lc
     .MinimumLevel.Information()
@@ -32,7 +35,8 @@ builder.Services.AddSerilog(lc => lc
     .Enrich.FromLogContext()
     .WriteTo.Console(formatProvider: System.Globalization.CultureInfo.InvariantCulture)
     .WriteTo.File(logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14,
-        formatProvider: System.Globalization.CultureInfo.InvariantCulture));
+        formatProvider: System.Globalization.CultureInfo.InvariantCulture),
+    preserveStaticLogger: true);
 
 // Дані: SQLite або PostgreSQL залежно від Database:Provider.
 builder.Services.AddGreenhouseDatabase(
@@ -117,7 +121,7 @@ await using (var scope = app.Services.CreateAsyncScope())
 }
 
 // Логування запитів стоїть перед обробником винятків, щоб у лог потрапляв фінальний код відповіді.
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(o => o.Logger = app.Services.GetRequiredService<Serilog.ILogger>());
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseDefaultFiles();

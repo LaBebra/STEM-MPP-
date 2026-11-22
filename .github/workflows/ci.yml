@@ -34,14 +34,26 @@ jobs:
       - name: Збірка зі статичним аналізом (попередження = помилки)
         run: dotnet build -c Release --no-restore
 
-      - name: Тести
-        run: dotnet test -c Release --no-build --results-directory TestResults --logger "trx;LogFileName=tests.trx"
+      - name: Тести з покриттям
+        run: dotnet test -c Release --no-build --settings coverlet.runsettings --results-directory TestResults --logger "trx;LogFileName=tests.trx"
+
+      - name: Звіт покриття і поріг 80%
+        shell: bash
+        run: |
+          dotnet reportgenerator -reports:"TestResults/*/coverage.cobertura.xml" -targetdir:coverage -reporttypes:"Cobertura;TextSummary;MarkdownSummaryGithub;Html"
+          cat coverage/Summary.txt
+          cat coverage/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+          rate=$(grep -o 'line-rate="[0-9.]*"' coverage/Cobertura.xml | head -1 | grep -o '[0-9.]*')
+          echo "Покриття рядків: $rate"
+          awk -v r="$rate" 'BEGIN { exit (r >= 0.80) ? 0 : 1 }' || { echo "Покриття нижче 80%"; exit 1; }
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: tests-${{ matrix.os }}
-          path: TestResults/**/*.trx
+          name: coverage-${{ matrix.os }}
+          path: |
+            coverage/
+            TestResults/**/*.trx
 
   docker:
     name: Docker-образ

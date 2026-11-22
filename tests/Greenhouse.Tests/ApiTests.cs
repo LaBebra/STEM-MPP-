@@ -40,6 +40,13 @@ public class ApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Dashboard_and_openapi_are_served()
+    {
+        Assert.Equal(HttpStatusCode.OK, (await _anon.GetAsync(new Uri("/", UriKind.Relative))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await _anon.GetAsync(new Uri("/openapi/v1.json", UriKind.Relative))).StatusCode);
+    }
+
+    [Fact]
     public async Task Add_and_list_reading()
     {
         var response = await _sensor.PostReadingAsync(new { sensor = "temp-1", value = 23.4 });

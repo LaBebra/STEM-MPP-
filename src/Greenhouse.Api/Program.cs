@@ -37,6 +37,7 @@ builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower);
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddOpenApi();
 
 // Безпека: датчики пишуть з API-ключем, люди входять з JWT; права визначає роль.
 var authSection = builder.Configuration.GetSection(AuthOptions.Section);
@@ -100,10 +101,13 @@ await using (var scope = app.Services.CreateAsyncScope())
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
+app.MapOpenApi();
 var api = app.MapGroup("/api");
 api.MapGet("/health", () => TypedResults.Ok(new { status = "ok" })).WithTags("Health");
 api.MapAuthEndpoints()

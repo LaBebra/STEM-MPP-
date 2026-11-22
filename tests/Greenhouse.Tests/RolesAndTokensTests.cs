@@ -18,6 +18,23 @@ public class RolesAndTokensTests : IDisposable
     }
 
     [Fact]
+    public async Task Viewer_cannot_acknowledge_or_change_thresholds()
+    {
+        using var viewer = await _factory.CreateUserClientAsync(Roles.Viewer);
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.PostAsync(new Uri("/api/alerts/1/ack", UriKind.Relative), null)).StatusCode);
+        var put = await viewer.PutAsJsonAsync("/api/greenhouses/1/thresholds/light", new { comfort_min = 1, comfort_max = 2 }, GreenhouseFactory.Json);
+        Assert.Equal(HttpStatusCode.Forbidden, put.StatusCode);
+    }
+
+    [Fact]
+    public async Task Operator_cannot_manage_greenhouses_or_users()
+    {
+        using var op = await _factory.CreateUserClientAsync(Roles.Operator);
+        Assert.Equal(HttpStatusCode.Forbidden, (await op.PostAsJsonAsync("/api/greenhouses", new { name = "X" }, GreenhouseFactory.Json)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await op.GetAsync(new Uri("/api/users", UriKind.Relative))).StatusCode);
+    }
+
+    [Fact]
     public async Task Admin_lists_and_creates_users_with_validation()
     {
         using var admin = await _factory.CreateAdminClientAsync();

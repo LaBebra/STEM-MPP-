@@ -13,6 +13,7 @@ public static class ServiceRegistration
         services.TryAddSingleton<ITelemetryNotifier, NullTelemetryNotifier>();
         services.AddScoped<ReadingService>();
         services.AddScoped<AlertService>();
+        services.AddScoped<GreenhouseService>();
         services.AddScoped<UserService>();
         return services;
     }

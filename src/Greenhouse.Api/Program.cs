@@ -97,6 +97,7 @@ var api = app.MapGroup("/api");
 api.MapGet("/health", () => TypedResults.Ok(new { status = "ok" })).WithTags("Health");
 api.MapAuthEndpoints()
     .MapUserEndpoints()
+    .MapGreenhouseEndpoints()
     .MapTelemetryEndpoints();
 
 await app.RunAsync();

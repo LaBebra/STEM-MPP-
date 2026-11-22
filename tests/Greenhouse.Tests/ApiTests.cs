@@ -32,6 +32,14 @@ public class ApiTests : IDisposable
     }
 
     [Fact]
+    public async Task Default_sensors_are_seeded_by_migration()
+    {
+        var sensors = await _anon.GetAsync<List<SensorOut>>("/api/sensors");
+        Assert.Equal(["temp-1", "hum-1", "light-1"], sensors.Select(s => s.Name));
+        Assert.Equal("°C", sensors[0].Unit);
+    }
+
+    [Fact]
     public async Task Add_and_list_reading()
     {
         var response = await _sensor.PostReadingAsync(new { sensor = "temp-1", value = 23.4 });

@@ -96,7 +96,8 @@ app.UseRateLimiter();
 var api = app.MapGroup("/api");
 api.MapGet("/health", () => TypedResults.Ok(new { status = "ok" })).WithTags("Health");
 api.MapAuthEndpoints()
-    .MapUserEndpoints();
+    .MapUserEndpoints()
+    .MapTelemetryEndpoints();
 
 await app.RunAsync();
 

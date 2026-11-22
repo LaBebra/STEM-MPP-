@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using Greenhouse.Api.Auth;
 using Greenhouse.Api.Endpoints;
 using Greenhouse.Api.Infrastructure;
+using Greenhouse.Api.Realtime;
 using Greenhouse.Core;
 using Greenhouse.Core.Data;
 using Greenhouse.Core.Domain;
@@ -19,8 +20,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddGreenhouseDatabase(
     builder.Configuration["Database:Provider"],
     builder.Configuration.GetConnectionString("Greenhouse") ?? "Data Source=greenhouse.db");
+builder.Services.AddSingleton<ITelemetryNotifier, SignalRTelemetryNotifier>();
 builder.Services.AddGreenhouseCore();
 builder.Services.AddSingleton<TokenService>();
+builder.Services.AddSignalR().AddJsonProtocol(o =>
+    o.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower);
 
 builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower);
@@ -99,6 +103,7 @@ api.MapAuthEndpoints()
     .MapUserEndpoints()
     .MapGreenhouseEndpoints()
     .MapTelemetryEndpoints();
+app.MapHub<TelemetryHub>(TelemetryHub.Path);
 
 await app.RunAsync();
 

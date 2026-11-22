@@ -236,4 +236,40 @@ public class ApiTests : IDisposable
 
         Assert.Equal(HttpStatusCode.Created, (await _sensor.PostReadingAsync(new { sensor = "temp-1", value = 20 })).StatusCode);
     }
+
+    [Fact]
+    public async Task Errors_are_problem_details_and_logged_to_file()
+    {
+        var response = await _sensor.PostReadingAsync(new { sensor = "hum-1", value = 101 });
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("поза фізичним діапазоном", body, StringComparison.Ordinal);
+
+        var log = await ReadLogAsync("відхилено");
+        Assert.Contains("відхилено", log, StringComparison.Ordinal);
+        Assert.DoesNotContain("[ERR]", log, StringComparison.Ordinal);
+    }
+
+    /// <summary>Читає лог-файл; чекає до 5 с, поки в ньому з'явиться очікуваний рядок (запис на диск може відставати).</summary>
+    private async Task<string> ReadLogAsync(string expected)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (true)
+        {
+            var text = new System.Text.StringBuilder();
+            foreach (var file in Directory.GetFiles(_factory.LogDir, "*.log"))
+            {
+                await using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                using var reader = new StreamReader(stream);
+                text.Append(await reader.ReadToEndAsync());
+            }
+
+            if (text.ToString().Contains(expected, StringComparison.Ordinal) || DateTime.UtcNow > deadline)
+            {
+                return text.ToString();
+            }
+
+            await Task.Delay(100);
+        }
+    }
 }
